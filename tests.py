@@ -150,3 +150,81 @@ def test_correct_selected_choices_exceeding_max_selections_raises_exception():
 
     with pytest.raises(Exception, match='Cannot select more than 1 choice'):
         question.correct_selected_choices([choice1.id, choice2.id])
+
+
+# Fixtures e testes
+
+@pytest.fixture
+def question_with_one_correct_answer():
+    question = Question(title="Qual a capital do Brasil?", max_selections=1)
+    question.add_choice("São Paulo", is_correct=False)
+    question.add_choice("Brasília", is_correct=True)
+    question.add_choice("Rio de Janeiro", is_correct=False)
+
+    question_fixed = Question(
+        title="Qual a capital do Brasil?", max_selections=1)
+    c1 = question_fixed.add_choice("São Paulo")
+    c2 = question_fixed.add_choice("Brasília")
+    c3 = question_fixed.add_choice("Rio de Janeiro")
+    question_fixed.set_correct_choices([c2.id])
+
+    return question_fixed
+
+
+@pytest.fixture
+def question_with_multiple_correct_answers():
+    question = Question(
+        title="Quais destes são planetas do sistema solar?", max_selections=2)
+    c1 = question.add_choice("Marte")
+    c2 = question.add_choice("Lua")
+    c3 = question.add_choice("Júpiter")
+    c4 = question.add_choice("Plutão")
+    question.set_correct_choices([c1.id, c3.id])
+
+    return question
+
+# Testa se a fixture básica foi criada com o número correto de alternativas.
+
+
+def test_fixture_setup_correctly(question_with_one_correct_answer):
+    assert len(question_with_one_correct_answer.choices) == 3
+
+# Testa a seleção da única resposta correta.
+
+
+def test_selection_of_single_correct_answer(question_with_one_correct_answer):
+    correct_choice_id = 2
+
+    result = question_with_one_correct_answer.correct_selected_choices([
+                                                                       correct_choice_id])
+
+    assert result == [correct_choice_id]
+
+# Testa a remoção de uma alternativa.
+
+
+def test_remove_choice_from_fixture(question_with_one_correct_answer):
+    choice_id_to_remove = 1
+
+    question_with_one_correct_answer.remove_choice_by_id(choice_id_to_remove)
+
+    assert len(question_with_one_correct_answer.choices) == 2
+    remaining_ids = [
+        choice.id for choice in question_with_one_correct_answer.choices]
+    assert choice_id_to_remove not in remaining_ids
+
+# Testa a seleção parcialmente correta de múltiplas respostas
+
+
+def test_partial_correct_selection_in_multi_choice(question_with_multiple_correct_answers):
+    result = question_with_multiple_correct_answers.correct_selected_choices([
+                                                                             1, 2])
+    assert result == [1]
+
+# Testa a seleção correta de múltiplas respostas
+
+
+def test_all_correct_selections_in_multi_choice(question_with_multiple_correct_answers):
+    result = question_with_multiple_correct_answers.correct_selected_choices([
+                                                                             1, 3])
+    assert set(result) == {1, 3}
